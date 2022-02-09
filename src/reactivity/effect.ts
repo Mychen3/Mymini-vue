@@ -1,5 +1,17 @@
 import { extend } from "../shared";
 
+/*
+*  绑定到全局的activeEffect
+*  方便依赖收集
+* */
+let activeEffect;
+
+/* 
+*  决定是否收集依赖
+* */
+let shouldTrack;
+
+
 class ReactiveEffect {
     private _fn: any;
     deps = [];
@@ -11,8 +23,23 @@ class ReactiveEffect {
     }
 
     run() {
-        activeEffect = this
-        return this._fn();
+        // 会收集依赖
+        // 使用shouldTrack来做区分是否收集这次依赖
+        
+          if(!this.active){
+            return this._fn();
+          }   
+          // 应该收集依赖
+          shouldTrack = true
+          activeEffect = this
+          
+         const result =  this._fn()
+
+           // 重置
+           shouldTrack = false
+         
+           return result
+
     }
     stop() {
         if (this.active) {
@@ -26,6 +53,12 @@ function cleanupEffect(effect) {
     effect.deps.forEach((dep: any) => {
         dep.delete(effect)
     })
+    effect.deps.length = 0
+}
+
+// 判断是否收集该依赖
+function isTracking(){
+      return shouldTrack && activeEffect !== undefined;
 }
 
 /*
@@ -35,11 +68,14 @@ const targetMap = new Map()
 
 // 收集依赖
 export function track(target, key) {
+
+   if(!isTracking()) return    
+
     let depsMap = targetMap.get(target);
     //
     //  如果没有的话。初始化
     if (!depsMap) {
-        depsMap = new Map()
+        depsMap = new Map()             
         // 建立映射关系
         targetMap.set(target, depsMap);
     }
@@ -49,16 +85,13 @@ export function track(target, key) {
         dep = new Set()
         depsMap.set(key, dep)
     }
-    if(!activeEffect) return;
+   //已经在dep中了
+    if(dep.has(activeEffect)) return
     dep.add(activeEffect)
+    
     activeEffect.deps.push(dep)
 }
 
-/*
-*  绑定到全局的activeEffect
-*  方便依赖收集
-* */
-let activeEffect;
 
 //触发依赖
 export function trigger(target, key) {
@@ -74,6 +107,7 @@ export function trigger(target, key) {
     }
 
 }
+
 
 export function effect(fn, options: any = {}) {
     const scheduler = options.scheduler;
