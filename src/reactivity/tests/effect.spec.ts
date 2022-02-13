@@ -5,18 +5,34 @@ import { reactive } from "../reactive"
 describe("effect", () => {
      it("stop",()=>{
          let dummy;
-         const obj = reactive({prop:1});
+         let name;
+         let testName;
+         const obj = reactive({prop:1,chen:'测试',test:'666'});
          const runner = effect(()=>{
              dummy = obj.prop
-         });
-         obj.prop = 2;
-         expect(dummy).toBe(2)
-         stop(runner);
+             testName =  obj.test
+         })
+         const runnerName = effect(()=>{
+               name = obj.chen
+         })
+
+         const runnerName2 = effect(()=>{
+            name = obj.chen
+            console.log('66666')
+      })
          
+         obj.test = '888'
+         obj.prop = 2;
+         obj.chen = '陈先生';
+         expect(dummy).toBe(2)
+        //  stop(runner);
+         expect(name).toBe('陈先生'); 
+         expect(testName).toBe('888');
             obj.prop++
 
-         expect(dummy).toBe(2)
+        //  expect(dummy).toBe(2)
          runner();
+         runnerName();
          expect(dummy).toBe(3);
      })
 

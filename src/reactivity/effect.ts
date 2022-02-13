@@ -31,6 +31,7 @@ class ReactiveEffect {
           }   
           // 应该收集依赖
           shouldTrack = true
+          // 给全局变量收集到effect的fn
           activeEffect = this
           
          const result =  this._fn()
@@ -48,7 +49,7 @@ class ReactiveEffect {
         }
     }
 }
-
+// 清空依赖
 function cleanupEffect(effect) {
     effect.deps.forEach((dep: any) => {
         dep.delete(effect)
@@ -70,8 +71,8 @@ const targetMap = new Map()
 export function track(target, key) {
 
    if(!isTracking()) return    
-
-    let depsMap = targetMap.get(target);
+   // 取到要收集的reactive对象
+       let depsMap = targetMap.get(target);
     //
     //  如果没有的话。初始化
     if (!depsMap) {
@@ -80,7 +81,10 @@ export function track(target, key) {
         targetMap.set(target, depsMap);
     }
 
+
     let dep = depsMap.get(key)
+    //用 dep 来存放所有的 effect
+    //所有依赖了这个值的 effect
     if (!dep) {
         dep = new Set()
         depsMap.set(key, dep)
