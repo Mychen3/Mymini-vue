@@ -25,21 +25,21 @@ class ReactiveEffect {
     run() {
         // 会收集依赖
         // 使用shouldTrack来做区分是否收集这次依赖
-        
-          if(!this.active){
-            return this._fn();
-          }   
-          // 应该收集依赖
-          shouldTrack = true
-          // 给全局变量收集到effect的fn
-          activeEffect = this
-          
-         const result =  this._fn()
 
-           // 重置
-           shouldTrack = false
-         
-           return result
+        if (!this.active) {
+            return this._fn();
+        }
+        // 应该收集依赖
+        shouldTrack = true
+        // 给全局变量收集到effect的fn
+        activeEffect = this
+
+        const result = this._fn()
+
+        // 重置
+        shouldTrack = false
+
+        return result
 
     }
     stop() {
@@ -58,8 +58,8 @@ function cleanupEffect(effect) {
 }
 
 // 判断是否收集该依赖
-function isTracking(){
-      return shouldTrack && activeEffect !== undefined;
+export function isTracking() {
+    return shouldTrack && activeEffect !== undefined;
 }
 
 /*
@@ -70,18 +70,16 @@ const targetMap = new Map()
 // 收集依赖
 export function track(target, key) {
 
-   if(!isTracking()) return    
-   // 取到要收集的reactive对象
-       let depsMap = targetMap.get(target);
+    if (!isTracking()) return
+    // 取到要收集的reactive对象
+    let depsMap = targetMap.get(target);
     //
     //  如果没有的话。初始化
     if (!depsMap) {
-        depsMap = new Map()             
+        depsMap = new Map()
         // 建立映射关系
         targetMap.set(target, depsMap);
     }
-
-
     let dep = depsMap.get(key)
     //用 dep 来存放所有的 effect
     //所有依赖了这个值的 effect
@@ -89,19 +87,28 @@ export function track(target, key) {
         dep = new Set()
         depsMap.set(key, dep)
     }
-   //已经在dep中了
-    if(dep.has(activeEffect)) return
-    dep.add(activeEffect)
-    
-    activeEffect.deps.push(dep)
+    //已经在dep中了
+    trackEffect(dep)
 }
 
+
+export function trackEffect(dep) {
+    //看看dep之前添加过没，添加过就不添加了
+    if (dep.has(activeEffect)) return
+
+    dep.add(activeEffect)
+    activeEffect.deps.push(dep)
+}
 
 //触发依赖
 export function trigger(target, key) {
     let depsMap = targetMap.get(target)
     let dep = depsMap.get(key)
+    triggerEffec(dep)
 
+}
+
+export function triggerEffec(dep){
     for (const effect of dep) {
         if (effect.scheduler) {
             effect.scheduler()
@@ -109,7 +116,6 @@ export function trigger(target, key) {
             effect.run()
         }
     }
-
 }
 
 
@@ -119,8 +125,8 @@ export function effect(fn, options: any = {}) {
     // 创建一个effect
     const _effect = new ReactiveEffect(fn, scheduler)
     // options
-     extend(_effect, options)
-     
+    extend(_effect, options)
+
     _effect.run();
     const runner: any = _effect.run.bind(_effect)
     runner.effect = _effect
