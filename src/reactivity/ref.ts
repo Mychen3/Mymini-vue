@@ -1,4 +1,4 @@
-import { hasChanged ,isObject} from "../shared/index";
+import { hasChanged, isObject } from "../shared/index";
 import { trackEffect, triggerEffec, isTracking } from "./effect"
 import { reactive } from "./reactive";
 
@@ -7,7 +7,7 @@ import { reactive } from "./reactive";
 // 所以通过类 =》 value get set
 
 class RefImpl {
-    private _value; 
+    private _value;
     public dep
     private _rwaValue;
 
@@ -15,11 +15,12 @@ class RefImpl {
     public _v_isRef = true
 
     constructor(value) {
-        
-      // 声明一个值用来对比set的新值是不是一样的
-      this._rwaValue = value  
-      // 看看value是不是对象，是对象的话就用reactive包裹
-      this._value = convert(value)
+
+        // 声明一个值用来对比set的新值是不是一样的
+        this._rwaValue = value
+
+        // 看看value是不是对象，是对象的话就用reactive包裹
+        this._value = convert(value)
 
         this.dep = new Set()
     }
@@ -43,7 +44,7 @@ class RefImpl {
     }
 }
 
-function trackRefValue(ref){
+function trackRefValue(ref) {
 
     if (isTracking()) {
         // 依赖收集
@@ -51,7 +52,7 @@ function trackRefValue(ref){
     }
 }
 
-function convert (value){
+function convert(value) {
     return isObject(value) ? reactive(value) : value
 }
 
@@ -61,11 +62,32 @@ export function ref(value) {
 
 }
 
-export function isRef(ref){
-     return !!ref._v_isRef
+export function isRef(ref) {
+    return !!ref._v_isRef
 }
 
-export function unRef(ref){
+export function unRef(ref) {
     // 先看看是不是ref对象
-  return isRef(ref) ? ref.value : ref
+    return isRef(ref) ? ref._value : ref
+}
+
+// 实现ref数据不用点value
+export function proxyRef(objectRefs) {
+
+    return new Proxy(objectRefs, {
+
+        get(target, key) {
+            return unRef(Reflect.get(target, key))
+        },
+        set(target, key, value) {
+            //如果第一个是ref的话，第二个不是ref的话就直接赋值给第一个ref的value
+            if (isRef(target[key]) && !isRef(value)) {
+                //如果🈶️一边不是ref对象的话就直接给他
+                return target[key].value = value
+            } else {
+                // 如果target[key]和value 都是ref对象的话就直接替换了
+                return Reflect.set(target,key,value)
+            }
+        }
+    })
 }
