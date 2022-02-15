@@ -1,4 +1,4 @@
-import { extend } from "../shared";
+import { extend } from "../shared/index";
 
 /*
 *  绑定到全局的activeEffect
@@ -12,7 +12,7 @@ let activeEffect;
 let shouldTrack;
 
 
-class ReactiveEffect {
+export class ReactiveEffect {
     private _fn: any;
     deps = [];
     active = true;
