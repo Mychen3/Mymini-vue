@@ -1,20 +1,31 @@
+import { PublicInstanceProxyHandlers } from "./componentPublicInstance"
+import { initprops } from './componentProps'
+import { shallowReadonly } from "../reactivity/reactive"
+import {emit} from './componentEmit'
+import { initslots } from "./componentSlots"
 //  初始化 创建组件实例
 export function createComonentInstance(vnode) {
-    
+
     const component = {
         vnode,
-        type: vnode.type
+        type: vnode.type,
+        setupState: {},
+        props: {},
+        slots:{},
+        emit: () => { }
     }
+
+    component.emit = emit.bind(null,component) as any 
 
     return component
 }
 
-
+ 
 //处理组件类型
 export function setupComponent(instance) {
     //TODO
-    // initprops()
-    // initslots()
+    initprops(instance, instance.vnode.props)
+    initslots(instance,instance.vnode.children)
 
 
     // 调用setup函数
@@ -24,12 +35,20 @@ export function setupComponent(instance) {
 
 function setupStatefulComponent(instance: any) {
 
+
     const Component = instance.type
+
+    //ctx
+    instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers)
+
 
     const { setup } = Component
     if (setup) {
         // function || object
-        const setupResult = setup()
+        //setup的结果
+        const setupResult = setup(shallowReadonly(instance.props), {
+            emit: instance.emit
+        })
 
         handleSetupResult(setupResult, instance)
     }
@@ -53,8 +72,8 @@ function handleSetupResult(setupResult: any, instance) {
 function finishComponentSetup(instance) {
 
     const Component = instance.type
-    
-  
-        instance.render = Component.render;   
-    
+
+
+    instance.render = Component.render;
+
 }
