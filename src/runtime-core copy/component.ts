@@ -1,51 +1,63 @@
-import { shallowReadonly } from "../reactivity/reactive"
-import { emit } from "./componentEmit"
-import { initProps } from "./componentProps"
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance"
-import { initSlots } from "./componentSlots"
+import { initprops } from './componentProps'
+import { shallowReadonly } from "../reactivity/reactive"
+import {emit} from './componentEmit'
+import { initslots } from "./componentSlots"
 //  初始化 创建组件实例
 export function createComponentInstance(vnode,parent) {
-
-    console.log("createcomponentInstance",parent)
-
     const component = {
         vnode,
         type: vnode.type,
         setupState: {},
         props: {},
-        slots: {},
+        slots:{},
         provides:parent ? parent.provides:{},
         parent,
         emit: () => { }
     }
-    component.emit = emit.bind(null, component) as any
+
+    component.emit = emit.bind(null,component) as any 
+
     return component
 }
+
+ 
 //处理组件类型
-export function setupComponent(instance: any) {
-    initProps(instance, instance.vnode.props)
-    initSlots(instance, instance.vnode.children)
+export function setupComponent(instance) {
+    //TODO
+    initprops(instance, instance.vnode.props)
+    initslots(instance,instance.vnode.children)
     // 调用setup函数
     setupStatefulComponent(instance)
+
 }
 
 function setupStatefulComponent(instance: any) {
+
+
     const Component = instance.type
 
+    //ctx
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers)
 
-    const { setup } = Component
 
+    const { setup } = Component
     if (setup) {
-        setCurrenInstance(instance)
-           //setup的结果
-        const setupResult = setup(shallowReadonly(instance.props), { emit: instance.emit })
-        setCurrenInstance(null)
+        setCurrentInstance(instance)
+        // function || object
+        //setup的结果
+        const setupResult = setup(shallowReadonly(instance.props), {
+            emit: instance.emit
+        })
+        setCurrentInstance(null)
+
         handleSetupResult(setupResult, instance)
     }
+
 }
 // 判断setup函数返回的是object还是function
-function handleSetupResult(setupResult, instance) {
+function handleSetupResult(setupResult: any, instance) {
+
     // 可能为function || object
     // TODO function 
 
@@ -55,22 +67,24 @@ function handleSetupResult(setupResult, instance) {
     }
 
     finishComponentSetup(instance)
-
 }
+
 // 判断组件有没有render
 function finishComponentSetup(instance) {
+
     const Component = instance.type
 
-    instance.render = Component.render
+
+    instance.render = Component.render;
 
 }
 
-let currenInstance = null
+let currentInstance = null
 
-export function getCurrentInstance() {
-    return currenInstance
+export function getCurrentInstance(){
+    return currentInstance
 }
 
-export function setCurrenInstance(instance) {
-    currenInstance = instance
+function setCurrentInstance(instance){
+    currentInstance = instance
 }

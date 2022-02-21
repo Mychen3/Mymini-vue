@@ -1,4 +1,4 @@
-import { h } from '../../lib/guide-mini-vue.esm.js'
+import { h,createTextVnode } from '../../lib/guide-mini-vue.esm.js'
 import { Foo } from './Foo.js'
 window.self = null
 // <template>最终会编译成render函数
@@ -8,8 +8,8 @@ export const App = {
     render() {
         const app = h("div", {}, "App");
         const foo = h(Foo, {}, {
-            header: ({age}) => h("p", {}, "header" + age),
-            footer: () => h("p", {}, "footer")
+            header: ({ age }) => [h("p", {}, "header" + age),createTextVnode('text节点渲染')],
+            footer: () => h("p", {}, "footer" + this.msg)
         });
         return h("div", {}, [app, foo])
     },
