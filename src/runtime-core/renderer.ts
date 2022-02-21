@@ -1,9 +1,23 @@
+import { createAppAPI } from './createApp'
 import { isObject } from '../shared/index'
 import { ShapeFlags } from '../shared/ShapeFlags'
 import { createComponentInstance, setupComponent } from './component'
 import { Fragment,Text} from './vnode'
 
-export function render(vnode, container,parentComponent = null) {
+
+export function createRenderer(options){
+ 
+
+     const {
+         createElement,
+         // 设置props属性
+         patchProp,
+         //插入元素
+         insert
+     } = options
+
+
+ function render(vnode, container,parentComponent = null) {
   // patch
     patch(vnode, container,parentComponent)
 }
@@ -53,7 +67,8 @@ function processElement(vnode, container,parentComponent) {
 //创建elementl类型
 function mountElement(vnode, container,parentComponent) {
 
-    const el: Element = (vnode.el = document.createElement(vnode.type))
+    const el: Element = (vnode.el = createElement(vnode.type))
+
     const { children, shapeFlag } = vnode
     //  如果children是String的话 就直接处理
     // string,array
@@ -69,19 +84,12 @@ function mountElement(vnode, container,parentComponent) {
     for (const key in props) {
         const val = props[key];
 
-        //处理事件
-        // on + Event name
-        // onMousedown
-        const isOn = (key: string) => /^on[A-Z]/.test(key);
-        if (isOn(key)) {
-            const event = (key as string).slice(2).toLowerCase()
-            el.addEventListener(event, val)
-        } else {
-                //添加props属性
-            el.setAttribute(key, val)
-        }
+     
+
+        patchProp(el,key,val)
     }
-    container.append(el)
+       insert(el,container)
+    // container.append(el)
 }
 
 function mountChildren(vnode, el,parentComponent) {
@@ -113,4 +121,9 @@ function setupRenderEffect(instance, initialVnode, container) {
     patch(subTree, container,instance)
 
     initialVnode.el = subTree.el
+ }
+
+ return {
+     createApp:createAppAPI(render)
+ }
 }
