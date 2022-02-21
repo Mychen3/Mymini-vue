@@ -38,7 +38,8 @@ function setupStatefulComponent(instance: any) {
 
     if (setup) {
         setCurrenInstance(instance)
-           //setup的结果
+         // function || object
+        //setup的结果
         const setupResult = setup(shallowReadonly(instance.props), { emit: instance.emit })
         setCurrenInstance(null)
         handleSetupResult(setupResult, instance)

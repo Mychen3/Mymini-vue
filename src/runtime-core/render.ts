@@ -98,6 +98,7 @@ function processComponent(vnode, container,parentComponent) {
 }
 
 function mountComponent(initialVnode, container,parentComponent) {
+     //  创建组件实例对象    
     const instance = createComponentInstance(initialVnode,parentComponent)
     //处理组件
     setupComponent(instance)
