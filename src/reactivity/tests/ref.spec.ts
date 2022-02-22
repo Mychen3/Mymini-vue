@@ -1,4 +1,4 @@
-import { isRef, ref, unRef,proxyRef} from "../ref"
+import { isRef, ref, unRef,proxyRefs} from "../ref"
 import { effect } from "../effect"
 import { reactive,isProxy} from "../reactive"
 
@@ -72,7 +72,7 @@ describe("ref", () => {
             age:ref(6),
             name:'chen'
         }
-        const proxyUser = proxyRef(user);
+        const proxyUser = proxyRefs(user);
 
         expect(user.age.value).toBe(6)
         expect(proxyUser.age).toBe(6)

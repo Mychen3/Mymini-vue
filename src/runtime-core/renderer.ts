@@ -1,129 +1,201 @@
 import { createAppAPI } from './createApp'
-import { isObject } from '../shared/index'
+import { EMPTY_OBJ, isObject } from '../shared/index'
 import { ShapeFlags } from '../shared/ShapeFlags'
 import { createComponentInstance, setupComponent } from './component'
-import { Fragment,Text} from './vnode'
+import { Fragment, Text } from './vnode'
+import { effect } from '../reactivity/effect'
 
 
-export function createRenderer(options){
+export function createRenderer(options) {
+
+
+    const {
+        createElement: hostCreateElement,
+        // 设置props属性
+        patchProp: hostPatchProp,
+        //插入元素
+        insert:hostInsert
+    } = options
+
+
+    function render(vnode, container, parentComponent = null) {
+        // patch
+        patch(null, vnode, container, parentComponent)
+    }
+
+    // n1 = 老的虚拟节点
+    // n2 = 新的虚拟节点
+    function patch(n1, n2, container, parentComponent) {
+        // 处理组件类型
+        // 判断一下 是 element类型还是object
+        // object就是组件
+        const { shapeFlag, type } = n2
+        switch (type) {
+            case Fragment:
+                processFragment(n1, n2, container, parentComponent)
+                break;
+            case Text:
+                processText(n1, n2, container)
+                break;
+
+            default:
+                // 如果为String就是element类型
+                if (shapeFlag & ShapeFlags.ELEMENT) {
+                    processElement(n1, n2, container, parentComponent)
+                } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+                    processComponent(n1, n2, container, parentComponent)
+                }
+                break;
+        }
+
+    }
+    function processFragment(n1, n2, container, parentComponent) {
+
+        mountChildren(n2, container, parentComponent)
+    }
+
+    function processText(n1, n2, container) {
+        const { children } = n2
+        const textNode = (n2.el = document.createTextNode(children))
+        container.append(textNode)
+
+    }
+
+
+    // elementl类型
+    function processElement(n1, n2, container, parentComponent) {
+        //  如果老的虚拟节点不存在
+        if (!n1) {
+            //那就初始化
+            mountElement(n2, container, parentComponent)
+        } else {
+            // 不然就是更新
+            patchElement(n1, n2, container)
+        }
+    }
+
+    // 处理更新对比
+    function patchElement(n1, n2, container) {
+        const oldProps = n1.props || EMPTY_OBJ;
+        const newProps = n2.props || EMPTY_OBJ;
+
+        const el = (n1.el = n2.el)
+
+        patchProps(oldProps, newProps, el)
+
+    }
+
  
 
-     const {
-         createElement,
-         // 设置props属性
-         patchProp,
-         //插入元素
-         insert
-     } = options
+    function patchProps(oldProps, newProps, el) {
+        if (oldProps !== newProps) {
+            for (const key in newProps) {
+                //旧的
+                const prevProp = oldProps[key]
+                //新的
+                const nextProp = newProps[key]
 
-
- function render(vnode, container,parentComponent = null) {
-  // patch
-    patch(vnode, container,parentComponent)
-}
-
-function patch(vnode, container,parentComponent) {
-     // 处理组件类型
-    // 判断一下 是 element类型还是object
-    // object就是组件
-    const { shapeFlag, type } = vnode
-    switch (type) {
-        case Fragment:
-            processFragment(vnode, container,parentComponent)
-            break;
-        case Text:
-            processText(vnode, container)
-            break;
-
-        default:
-      // 如果为String就是element类型
-            if (shapeFlag & ShapeFlags.ELEMENT) {
-                processElement(vnode, container,parentComponent)
-            } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-                processComponent(vnode, container,parentComponent)
+                if (prevProp !== nextProp) {
+                    hostPatchProp(el, key, prevProp, nextProp)
+                }
             }
-            break;
+
+            if (oldProps !== EMPTY_OBJ) {
+                for (const key in oldProps) {
+                    // 如果旧props key不在
+                    if (!(key in newProps)) {
+                        hostPatchProp(el, key, oldProps[key], null)
+                    }
+                }
+            }
+        }
+
+
+
+
     }
 
-}
-function processFragment(vnode, container,parentComponent) {
+    //创建elementl类型
+    function mountElement(vnode, container, parentComponent) {
 
-    mountChildren(vnode, container,parentComponent)
-}
+        const el: Element = (vnode.el = hostCreateElement(vnode.type))
 
-function processText(vnode, container) {
-    const { children } = vnode
-    const textNode = (vnode.el = document.createTextNode(children))
-    container.append(textNode)
+        const { children, shapeFlag } = vnode
+        //  如果children是String的话 就直接处理
+        // string,array
+        if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+            el.textContent = children
+        } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+            // 如果是数组，哪里面每个都是vnode，虚拟节点就遍历去递归执行patch
+            mountChildren(vnode, el, parentComponent)
+        }
 
-}
-
-
-// elementl类型
-function processElement(vnode, container,parentComponent) {
-    mountElement(vnode, container,parentComponent)
-}
-
-//创建elementl类型
-function mountElement(vnode, container,parentComponent) {
-
-    const el: Element = (vnode.el = createElement(vnode.type))
-
-    const { children, shapeFlag } = vnode
-    //  如果children是String的话 就直接处理
-    // string,array
-    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
-        el.textContent = children
-    } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-           // 如果是数组，哪里面每个都是vnode，虚拟节点就遍历去递归执行patch
-        mountChildren(vnode, el,parentComponent)
+        // props
+        const { props } = vnode
+        for (const key in props) {
+            const val = props[key];
+            hostPatchProp(el, key, null, val)
+        }
+        hostInsert(el, container)
+        // container.append(el)
     }
 
-    // props
-    const { props } = vnode
-    for (const key in props) {
-        const val = props[key];
-
-     
-
-        patchProp(el,key,val)
+    function mountChildren(vnode, el, parentComponent) {
+        vnode.children.forEach((v) => {
+            patch(null, v, el, parentComponent)
+        })
     }
-       insert(el,container)
-    // container.append(el)
-}
-
-function mountChildren(vnode, el,parentComponent) {
-    vnode.children.forEach((v) => {
-        patch(v, el,parentComponent)
-    })
-}
 
 
-//组件类型
-function processComponent(vnode, container,parentComponent) {
-   // 去挂载
-    mountComponent(vnode, container,parentComponent)
-}
+    //组件类型
+    function processComponent(n1, n2, container, parentComponent) {
+        // 去挂载
+        mountComponent(n2, container, parentComponent)
+    }
 
-function mountComponent(initialVnode, container,parentComponent) {
-     //  创建组件实例对象    
-    const instance = createComponentInstance(initialVnode,parentComponent)
-    //处理组件
-    setupComponent(instance)
+    function mountComponent(initialVnode, container, parentComponent) {
+        //  创建组件实例对象    
+        const instance = createComponentInstance(initialVnode, parentComponent)
+        //处理组件
+        setupComponent(instance)
         //调用rebder
-    setupRenderEffect(instance, initialVnode, container)
-}
+        setupRenderEffect(instance, initialVnode, container)
+    }
 
-function setupRenderEffect(instance, initialVnode, container) {
-    const { proxy } = instance
-    const subTree = instance.render.call(proxy)
-   // 然后在去调用 拆箱
-    patch(subTree, container,instance)
+    function setupRenderEffect(instance, initialVnode, container) {
 
-    initialVnode.el = subTree.el
- }
+        effect(() => {
 
- return {
-     createApp:createAppAPI(render)
- }
+            // 初始化
+            if (!instance.isMounted) {
+                const { proxy } = instance
+                const subTree = (instance.subTree = instance.render.call(proxy))
+                // 然后在去调用 拆箱
+                patch(null, subTree, container, instance)
+
+                initialVnode.el = subTree.el
+
+                // 改变初始化状态，下次就是updata
+                instance.isMounted = true
+            } else {
+                const { proxy } = instance
+                // 新的SubTree
+                const subTree = instance.render.call(proxy)
+                // 老的SubTree
+                const prevSubTree = instance.subTree
+                // 下次再更新的
+                instance.subTree = subTree
+                // 然后在去调用 拆箱
+                patch(prevSubTree, subTree, container, instance)
+
+            }
+
+
+
+        })
+    }
+
+    return {
+        createApp: createAppAPI(render)
+    }
 }

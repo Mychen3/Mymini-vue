@@ -2,27 +2,33 @@
 
 import { createRenderer } from "../runtime-core"
 
-function createElement(type) {
+export function createElement(type) {
     return document.createElement(type)
 
 }
 
-function patchProp(el, key, val) {
+export function patchProp(el, key, prevVal, nextVal) {
     //处理事件
     // on + Event name
     // onMousedown
     const isOn = (key: string) => /^on[A-Z]/.test(key);
     if (isOn(key)) {
         const event = (key as string).slice(2).toLowerCase()
-        el.addEventListener(event, val)
+        el.addEventListener(event, nextVal)
     } else {
-        //添加props属性
-        el.setAttribute(key, val)
+
+        if (nextVal === undefined || nextVal === null) {
+            
+            el.removeAttribute(key, nextVal)
+        }else{
+            //添加props属性
+            el.setAttribute(key, nextVal)
+        }
     }
 
 }
 
-function insert(el, parent) {
+export function insert(el, parent) {
     parent.append(el)
 
 
@@ -30,13 +36,13 @@ function insert(el, parent) {
 
 
 
-const renderer:any = createRenderer({
+const renderer: any = createRenderer({
     createElement,
     patchProp,
     insert
 })
 
-export function createApp(...args){
+export function createApp(...args) {
     return renderer.createApp(...args)
 }
 

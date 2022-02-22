@@ -72,7 +72,7 @@ export function unRef(ref) {
 }
 
 // 实现ref数据不用点value
-export function proxyRef(objectRefs) {
+export function proxyRefs(objectRefs) {
 
     return new Proxy(objectRefs, {
 
