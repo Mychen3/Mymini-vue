@@ -28,8 +28,9 @@ export function patchProp(el, key, prevVal, nextVal) {
 
 }
 
-export function insert(el, parent) {
-    parent.append(el)
+export function insert(el, parent,anchor) {
+    // parent.append(el)
+    parent.insertBefore(el,anchor || null);
 }
 
 export function remove(child){
