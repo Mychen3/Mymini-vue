@@ -30,16 +30,26 @@ export function patchProp(el, key, prevVal, nextVal) {
 
 export function insert(el, parent) {
     parent.append(el)
-
-
 }
 
+export function remove(child){
+    // 判断是否是一个父节点
+    const parent = child.parentNode
+     if (parent){
+         parent.removeChild(parent)
+     }
+}
 
+export function setElementText(el,text){
+    el.textContent = text
+}
 
 const renderer: any = createRenderer({
     createElement,
     patchProp,
-    insert
+    insert,
+    remove,
+    setElementText
 })
 
 export function createApp(...args) {
