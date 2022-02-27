@@ -1,5 +1,5 @@
 # Mymini-vue
-编写自己得mini-vue
+mini 版的vue3，只注重逻辑，对ts类型统一any
 
 ### Tasking
 
