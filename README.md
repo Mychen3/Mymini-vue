@@ -1,5 +1,5 @@
 # Mymini-vue
-mini 版的vue3，只注重逻辑，对ts类型统一any
+mini 版的vue3，只注重逻辑，对ts类型统一any。
 因为vue3源码 其实像render函数处理很多边缘问题，这个库解决把vue源码精简化
 
 ### Tasking
