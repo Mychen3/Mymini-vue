@@ -1,5 +1,6 @@
 # Mymini-vue
 mini 版的vue3，只注重逻辑，对ts类型统一any
+因为vue3源码 其实像render函数处理很多边缘问题，这个库解决把vue源码精简化
 
 ### Tasking
 
@@ -12,7 +13,7 @@ mini 版的vue3，只注重逻辑，对ts类型统一any
 - [x] 支持 component emit
 - [x] 支持 proxy
 - [x] 可以在 render 函数中获取 setup 返回的对象
-- [x] nextTick 的实现
+- [ ] nextTick 的实现
 - [x] 支持 getCurrentInstance
 - [x] 支持 provide/inject
 - [x] 支持最基础的 slots
